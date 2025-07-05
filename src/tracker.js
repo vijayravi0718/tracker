@@ -28,9 +28,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { get, set } from 'idb-keyval';
 
-const getDaysInMonth = (month, year) => {
-  return new Date(year, month + 1, 0).getDate();
-};
+const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
 
 export default function Tracker() {
   const currentDate = new Date();
@@ -58,15 +56,11 @@ export default function Tracker() {
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      set('choresByMonth', choresByMonth);
-    }
+    if (!loading) set('choresByMonth', choresByMonth);
   }, [choresByMonth, loading]);
 
   useEffect(() => {
-    if (!loading) {
-      set('habitData', habitData);
-    }
+    if (!loading) set('habitData', habitData);
   }, [habitData, loading]);
 
   useEffect(() => {
@@ -116,22 +110,51 @@ export default function Tracker() {
       const updated = { ...prev };
       if (!updated[date]) updated[date] = {};
       const current = updated[date][chore];
-      let next = null;
-      if (current === null || current === undefined) next = 'yes';
-      else if (current === 'yes') next = 'no';
-      else if (current === 'no') next = null;
+      const next = current === 'yes' ? 'no' : current === 'no' ? null : 'yes';
       updated[date][chore] = next;
       return updated;
     });
   };
 
-  const getStatus = (date, chore) => {
-    return habitData[date]?.[chore] || null;
+  const getStatus = (date, chore) => habitData[date]?.[chore] || null;
+
+  const exportData = () => {
+    const data = { choresByMonth, habitData };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'habit-tracker-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (parsed.choresByMonth && parsed.habitData) {
+          setChoresByMonth(parsed.choresByMonth);
+          setHabitData(parsed.habitData);
+          await set('choresByMonth', parsed.choresByMonth);
+          await set('habitData', parsed.habitData);
+          alert('✅ Data imported successfully!');
+        } else {
+          alert('❌ Invalid file format.');
+        }
+      } catch {
+        alert('❌ Failed to read the file.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const chores = choresByMonth[monthKey] || [];
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
-  const monthNames = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+  const monthNames = Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
 
   if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
 
@@ -170,7 +193,15 @@ export default function Tracker() {
         </Grid>
       </Grid>
 
-      <Paper>
+      <Box mt={3} textAlign="center">
+        <Button variant="outlined" onClick={exportData} sx={{ mr: 2 }}>📤 Export Backup</Button>
+        <label htmlFor="import-input">
+          <input id="import-input" type="file" accept=".json" style={{ display: 'none' }} onChange={importData} />
+          <Button variant="outlined" component="span">📥 Import Backup</Button>
+        </label>
+      </Box>
+
+      <Paper sx={{ mt: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -196,7 +227,7 @@ export default function Tracker() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {[...Array(daysInMonth)].map((_, i) => {
+            {Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               return (
@@ -221,7 +252,7 @@ export default function Tracker() {
                             justifyContent: 'center',
                             backgroundColor:
                               status === 'yes' ? '#e6ffe6' :
-                              status === 'no' ? '#ffe6e6' : '#fff'
+                                status === 'no' ? '#ffe6e6' : '#fff'
                           }}
                         >
                           {status === 'yes' && <CheckIcon color="success" />}
@@ -237,10 +268,7 @@ export default function Tracker() {
         </Table>
       </Paper>
 
-      <Dialog
-        open={confirmDeleteIndex !== null}
-        onClose={() => setConfirmDeleteIndex(null)}
-      >
+      <Dialog open={confirmDeleteIndex !== null} onClose={() => setConfirmDeleteIndex(null)}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
