@@ -26,6 +26,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { get, set } from 'idb-keyval';
 
 const getDaysInMonth = (month, year) => {
   return new Date(year, month + 1, 0).getDate();
@@ -35,8 +36,8 @@ export default function Tracker() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
-  const [choresByMonth, setChoresByMonth] = useState(() => JSON.parse(localStorage.getItem('choresByMonth')) || {});
-  const [habitData, setHabitData] = useState(() => JSON.parse(localStorage.getItem('habitData')) || {});
+  const [choresByMonth, setChoresByMonth] = useState({});
+  const [habitData, setHabitData] = useState({});
   const [newChore, setNewChore] = useState('');
   const [editChoreIndex, setEditChoreIndex] = useState(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
@@ -45,11 +46,21 @@ export default function Tracker() {
   const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
 
   useEffect(() => {
-    localStorage.setItem('choresByMonth', JSON.stringify(choresByMonth));
+    const loadData = async () => {
+      const chores = await get('choresByMonth');
+      const habits = await get('habitData');
+      if (chores) setChoresByMonth(chores);
+      if (habits) setHabitData(habits);
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    set('choresByMonth', choresByMonth);
   }, [choresByMonth]);
 
   useEffect(() => {
-    localStorage.setItem('habitData', JSON.stringify(habitData));
+    set('habitData', habitData);
   }, [habitData]);
 
   const handleAddChore = () => {
