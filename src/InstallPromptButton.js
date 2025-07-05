@@ -1,4 +1,4 @@
-// src/components/InstallPromptButton.js
+// src/InstallPromptButton.js
 import React, { useEffect, useState } from 'react';
 import { Button } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -8,18 +8,19 @@ const InstallPromptButton = () => {
   const [showButton, setShowButton] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowButton(true); // Show the install button
-    };
+  const handler = (e) => {
+    e.preventDefault();
+    console.log('✅ Install prompt captured'); // 👈 Add this here
+    setDeferredPrompt(e);
+    setShowButton(true);
+  };
 
-    window.addEventListener('beforeinstallprompt', handler);
+  window.addEventListener('beforeinstallprompt', handler);
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener('beforeinstallprompt', handler);
+  };
+}, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
@@ -31,6 +32,7 @@ const InstallPromptButton = () => {
       } else {
         console.log('❌ User dismissed the install prompt');
       }
+
       setDeferredPrompt(null);
       setShowButton(false);
     }
@@ -51,4 +53,3 @@ const InstallPromptButton = () => {
 };
 
 export default InstallPromptButton;
-
