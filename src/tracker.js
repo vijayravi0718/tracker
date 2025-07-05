@@ -42,6 +42,7 @@ export default function Tracker() {
   const [editChoreIndex, setEditChoreIndex] = useState(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
   const [visibleChoreIndex, setVisibleChoreIndex] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
 
@@ -51,17 +52,32 @@ export default function Tracker() {
       const habits = await get('habitData');
       if (chores) setChoresByMonth(chores);
       if (habits) setHabitData(habits);
+      setLoading(false);
     };
     loadData();
   }, []);
 
   useEffect(() => {
-    set('choresByMonth', choresByMonth);
-  }, [choresByMonth]);
+    if (!loading) {
+      set('choresByMonth', choresByMonth);
+    }
+  }, [choresByMonth, loading]);
 
   useEffect(() => {
-    set('habitData', habitData);
-  }, [habitData]);
+    if (!loading) {
+      set('habitData', habitData);
+    }
+  }, [habitData, loading]);
+
+  useEffect(() => {
+    const requestPersistentStorage = async () => {
+      if (navigator.storage && navigator.storage.persist) {
+        const isPersisted = await navigator.storage.persist();
+        console.log('🔐 Persistent storage:', isPersisted ? 'Granted' : 'Denied');
+      }
+    };
+    requestPersistentStorage();
+  }, []);
 
   const handleAddChore = () => {
     if (newChore.trim() !== '') {
@@ -116,6 +132,8 @@ export default function Tracker() {
   const chores = choresByMonth[monthKey] || [];
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
   const monthNames = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
 
   return (
     <Container maxWidth="xl">
@@ -219,7 +237,6 @@ export default function Tracker() {
         </Table>
       </Paper>
 
-      {/* Confirm Delete Dialog */}
       <Dialog
         open={confirmDeleteIndex !== null}
         onClose={() => setConfirmDeleteIndex(null)}
